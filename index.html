@@ -1,0 +1,348 @@
+<!DOCTYPE html>     
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>靜宜學餐吃透透 | 114學年度</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    
+    <style>
+        /* 1. 全域樣式與插畫風格背景 */
+        :root {
+            --primary: #ff4757;
+            --secondary: #2f3542;
+            --bg: #fcfaf2;
+            --accent: #ffcc00;
+        }
+
+        body {
+            background-color: var(--bg);
+            background-image: radial-gradient(#e0e0e0 1px, transparent 1px);
+            background-size: 20px 20px;
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            margin: 0;
+            padding-bottom: 50px;
+        }
+
+        /* 2. 標題區塊 */
+        header {
+            background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%);
+            color: white;
+            padding: 3rem 1rem;
+            text-align: center;
+            border-radius: 0 0 30px 30px;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+        }
+
+        .search-box input {
+            width: 80%;
+            max-width: 500px;
+            padding: 15px 25px;
+            border-radius: 50px;
+            border: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin-top: 15px;
+            font-size: 16px;
+        }
+
+        /* 3. 篩選與隨機按鈕 */
+        .filter-bar {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 25px;
+            border-radius: 25px;
+            border: 2px solid white;
+            background: white;
+            color: var(--secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .btn.active, .btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        /* 4. 卡片網格 (插畫風格) */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            border: 2px solid #333;
+            box-shadow: 5px 5px 0px var(--accent);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translate(-3px, -8px);
+            box-shadow: 8px 12px 0px var(--accent);
+        }
+
+        .loc-tag { font-size: 12px; font-weight: bold; color: #ff4757; }
+        .tel { color: #2d6a4f; font-weight: bold; font-size: 13px; margin-top: 8px; }
+
+        /* 5. 彈窗與圖片縮放 (毛玻璃) */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(47, 53, 66, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 600px;
+            padding: 30px;
+            border-radius: 30px;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .img-container {
+            overflow: auto;
+            max-height: 60vh;
+            background: #f9f9f9;
+            border-radius: 15px;
+            margin: 15px 0;
+            cursor: zoom-in;
+            display: flex;
+            justify-content: center;
+        }
+
+        #modalImg {
+            width: 100%;
+            transition: transform 0.3s ease;
+            transform-origin: center;
+        }
+
+        #modalImg.zoomed {
+            transform: scale(2.5);
+            cursor: zoom-out;
+        }
+
+        /* 留言板與進度條 */
+        .popularity-bar-bg {
+            background: #eee;
+            height: 12px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        #popularityBar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4757, #ffa502);
+            border-radius: 10px;
+            width: 0%;
+            transition: 0.8s;
+        }
+        .review-list {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <header>
+        <h1>靜宜學餐吃透透</h1>
+        <p>探索校園滋味 • 114學年度全校餐飲導覽</p>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜尋想吃的（如：拉麵、素食）..." onkeyup="search()">
+        </div>
+    </header>
+
+    <div class="notice-bar animate__animated animate__fadeIn" style="background:#fff3cd; color:#856404; padding:10px; text-align:center; border-radius:10px; margin:20px;">
+        <i class="fas fa-exclamation-circle"></i> 溫馨提示：靜園與至善約 19:30 關門，週末不營業。
+    </div>
+
+    <div class="filter-bar">
+        <button class="btn active" onclick="filter('all')">全部</button>
+        <button class="btn" onclick="filter('靜園')">靜園</button>
+        <button class="btn" onclick="filter('宜園')">宜園</button>
+        <button class="btn" onclick="filter('至善')">至善</button>
+        <button class="btn" style="background: var(--accent); border-color: var(--accent);" onclick="getRandomFood()">🍴 隨機抽一家</button>
+    </div>
+
+    <div id="cardGrid" class="grid"></div>
+</div>
+
+<div id="imageModal" class="modal-overlay" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <span onclick="closeModal()" style="position:absolute; top:15px; right:20px; font-size:30px; cursor:pointer;">&times;</span>
+        <h2 id="modalTitle" style="color:var(--primary); margin:0;"></h2>
+        
+        <div style="margin-top:10px; font-size:14px;">🔥 今日熱門度：<span id="popularityValue">0%</span></div>
+        <div class="popularity-bar-bg"><div id="popularityBar"></div></div>
+
+        <div class="img-container">
+            <img id="modalImg" src="" onclick="this.classList.toggle('zoomed')">
+        </div>
+
+        <div class="review-section" style="text-align:left;">
+            <h4><i class="fas fa-comment-dots"></i> 學生心得留言板</h4>
+            <div id="reviewList" class="review-list"></div>
+            <div id="starRating" style="color:#ffc107; font-size:24px; cursor:pointer; margin-bottom:10px;">
+                <span onclick="setStar(1)">☆</span><span onclick="setStar(2)">☆</span><span onclick="setStar(3)">☆</span><span onclick="setStar(4)">☆</span><span onclick="setStar(5)">☆</span>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="commentInput" placeholder="這家好用嗎？..." style="flex:1; padding:10px; border-radius:5px; border:1px solid #ddd;">
+                <button onclick="addComment()" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer;">送出</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const foods = [
+  { loc: "靜園", name: "白鬍子飲料店 🌍", type: "飲品/西點(EN Menu)", tel: "2632-8001#14416", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/473781194_1107631627537294_2063324884115509816_n.jpg", time: "19:30關門(週末休)" },
+  { loc: "靜園", name: "Morning house", type: "吐司/漢堡/蛋餅", tel: "0912-627436", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/whitebeard.jpg.jpeg", time: "19:30關門(週末休)" },
+  { loc: "靜園", name: "赤坂拉麵", type: "拉麵/炒烏龍", tel: "0916-707074", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/赤.jpg", time: "19:30關門(週末休)" },
+  { loc: "靜園", name: "川福美食", type: "酸辣粉/螺獅粉", tel: "0970-283332", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/川.jpg", time: "19:30關門(週末休)" },
+  { loc: "靜園", name: "小林自助餐 🥗", type: "自助餐/素食友善", tel: "2632-8001#14405", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/林.jpg", time: "19:30關門(週末休)" },
+  { loc: "靜園", name: "樂亭輕食 🥗", type: "選餐自由配", tel: "官方line", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/640%20(1).jpeg", time: "19:30關門(週末休)" },
+  { loc: "靜園", name: "湯才滷味", type: "各式口味滷味", tel: "0930-033329", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/滷味.jpg", time: "19:30關門(週末休)" },
+  { loc: "靜園", name: "極壽喜燒", type: "壽喜燒/鍋貼", tel: "0955-725991", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/壽.jpg", time: "19:30關門(週末休)" },
+  { loc: "靜園", name: "左撇子", type: "鴨肉飯/炒飯", tel: "0935-252241", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/左.jpg", time: "19:30關門(週末休)" },
+  { loc: "靜園", name: "極咖哩", type: "咖哩/水煮餐", tel: "0919-747652", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/極2.jpg", time: "19:30關門(週末休)" },
+  { loc: "靜園", name: "古肆鴨肉飯", type: "當歸鴨料理", tel: "0932-024358", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/鴨.jpg", time: "19:30關門(週末休)" },
+  { loc: "宜園", name: "早安山丘 🌍", type: "早午餐系列(EN Menu)", tel: "04-2652-7373", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/480803418_1138166838103640_1567186508147684440_n.jpg", time: "08:00-19:00" },
+  { loc: "宜園", name: "永和豆漿", type: "傳統台式早餐", tel: "0926-902-383", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/豆.jpg", time: "06:00-10:30 (最晚收攤)" },
+  { loc: "宜園", name: "炸雞大獅 🌍☪️", type: "手搖式炸雞(EN/Halal)", tel: "04-26521951", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/20221229_學餐版菜單_A3-01.jpg", time: "11:00-19:00" },
+  { loc: "宜園", name: "王者香 🌍", type: "質感茶飲(EN Menu)", tel: "0918-176551", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/474079881_1138879537769768_3043383075683274121_n.jpg", time: "08:30-19:00 (週日休)" },
+  { loc: "宜園", name: "宜園小廚", type: "現炒家常料理", tel: "0910-532988", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/宜f.jpg", time: "11:00-19:00" },
+  { loc: "宜園", name: "四海遊龍", type: "鍋貼/水餃", tel: "04-26328001", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/四.jpg", time: "11:00-19:00" },
+  { loc: "宜園", name: "黑の屋(拉麵本舖)", type: "日式拉麵", tel: "0921-347-656", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/IMAG2957.jpg", time: "11:00-19:00" },
+  { loc: "宜園", name: "咖哩大叔七號店 🌍", type: "日式咖哩(EN Menu)", tel: "0923-240811", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/大叔.jpg", time: "週一至四 19:00關 / 週六下午休" },
+  { loc: "至善", name: "拉亞漢堡 🌍", type: "早午餐系列(EN Menu)", tel: "0922-819983", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/219571.jpg", time: "至 14:30 (週末休)" },
+  { loc: "至善", name: "馨饌坊", type: "中式餐系", tel: "04-26313790", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/219573.jpg", time: "19:30關門(週末休)" },
+  { loc: "至善", name: "YAMI快餐", type: "平價快餐盒餐", tel: "0966-582684", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/219572.jpg", time: "19:30關門(週末休)" },
+  { loc: "至善", name: "食樂拾參 🥗", type: "健康營養盒餐", tel: "0970-555531", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/219574.jpg", time: "19:30關門(週末休)" },
+  { loc: "至善", name: "路易莎咖啡 🌍", type: "咖啡/輕食(EN Menu)", tel: "04-26330086", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/20220331223249_21.jpg", time: "07:30-18:00" },
+  { loc: "至善", name: "禾豐家", type: "岩燒海苔飯捲", tel: "0910-201352", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/538643076_1244309287494052_5591317241608278075_n.jpg", time: "僅中午(週末休)" },
+  { loc: "至善", name: "好吃鮮果 🥗", type: "現切水果/果汁", tel: "0986-389306", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/219575.jpg", time: "19:30關門(週末休)" }
+];
+
+let currentStars = 0;
+
+function render(data) {
+    const grid = document.getElementById('cardGrid');
+    grid.innerHTML = data.map(i => `
+        <div class="card animate__animated animate__fadeIn" onclick="openModal('${i.name}', '${i.menuImg}')">
+            <div class="loc-tag">${i.loc}</div>
+            <h3 style="margin:10px 0;">${i.name}</h3>
+            <div style="font-size:14px; color:#666;">${i.type}</div>
+            <div class="tel">☎ ${i.tel}</div>
+            <div style="margin-top:10px; font-size:11px; color:white; background:#ff4757; padding:2px 8px; border-radius:5px; display:inline-block;">🕒 ${i.time}</div>
+        </div>
+    `).join('');
+}
+
+function openModal(name, img) {
+    document.getElementById('modalTitle').innerText = name;
+    document.getElementById('modalImg').src = img;
+    document.getElementById('modalImg').classList.remove('zoomed');
+    document.getElementById('imageModal').style.display = 'flex';
+    
+    // 動態跑條
+    const bar = document.getElementById('popularityBar');
+    const valText = document.getElementById('popularityValue');
+    bar.style.width = '0%';
+    const randomVal = Math.floor(Math.random() * 25) + 75;
+    setTimeout(() => { 
+        bar.style.width = randomVal + '%'; 
+        valText.innerText = randomVal + '%';
+    }, 150);
+
+    setStar(0);
+    displayReviews(name);
+}
+
+function closeModal() {
+    document.getElementById('imageModal').style.display = 'none';
+}
+
+function search() {
+    const val = document.getElementById('searchInput').value.toLowerCase();
+    render(foods.filter(i => i.name.includes(val) || i.type.includes(val)));
+}
+
+function filter(loc) {
+    const btns = document.querySelectorAll('.btn');
+    btns.forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    render(loc === 'all' ? foods : foods.filter(i => i.loc === loc));
+}
+
+function getRandomFood() {
+    const r = foods[Math.floor(Math.random() * foods.length)];
+    openModal(r.name, r.menuImg);
+}
+
+function setStar(n) {
+    currentStars = n;
+    const ss = document.querySelectorAll('#starRating span');
+    ss.forEach((s, i) => s.innerText = i < n ? '★' : '☆');
+}
+
+function displayReviews(name) {
+    const list = document.getElementById('reviewList');
+    const data = JSON.parse(localStorage.getItem('foodReviews') || '{}');
+    const revs = data[name] || [];
+    list.innerHTML = revs.length === 0 ? '尚無心得' : revs.map(r => `
+        <div style="border-bottom:1px dashed #ddd; padding:5px 0;">
+            <div style="color:#ffc107;">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
+            <div>${r.text}</div>
+            <small style="color:#aaa;">${r.time}</small>
+        </div>
+    `).reverse().join('');
+}
+
+function addComment() {
+    const name = document.getElementById('modalTitle').innerText;
+    const input = document.getElementById('commentInput');
+    if(!input.value || currentStars === 0) return alert("請評分並輸入心得");
+    const data = JSON.parse(localStorage.getItem('foodReviews') || '{}');
+    if(!data[name]) data[name] = [];
+    data[name].push({text: input.value, stars: currentStars, time: new Date().toLocaleString()});
+    localStorage.setItem('foodReviews', JSON.stringify(data));
+    input.value = '';
+    setStar(0);
+    displayReviews(name);
+}
+
+// 初始化
+render(foods);
+</script>
+</body>
+</html>
