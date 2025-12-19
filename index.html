@@ -1,4 +1,4 @@
-<!DOCTYPE html>     
+<!DOCTYPE html>      
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -7,8 +7,29 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js">// 自動搬家功能：把 localStorage 的舊留言搬到 Firebase
+function migrateOldComments() {
+    const localData = JSON.parse(localStorage.getItem('foodReviews') || '{}');
+    
+    for (let shopName in localData) {
+        localData[shopName].forEach(comment => {
+            // 把舊資料推送到 Firebase
+            db.ref('comments/' + shopName).push({
+                text: comment.text + " (來自舊系統)",
+                stars: comment.stars,
+                time: comment.time
+            });
+        });
+    }
+    // 搬完後清空本地儲存，避免重複搬家
+    localStorage.removeItem('foodReviews');
+}
+
+// 在初始化時執行搬家
+migrateOldComments();</script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
     <style>
-        /* 1. 全域樣式與插畫風格背景 */
         :root {
             --primary: #ff4757;
             --secondary: #2f3542;
@@ -25,7 +46,6 @@
             padding-bottom: 50px;
         }
 
-        /* 2. 標題區塊 */
         header {
             background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%);
             color: white;
@@ -46,7 +66,6 @@
             font-size: 16px;
         }
 
-        /* 3. 篩選與隨機按鈕 */
         .filter-bar {
             display: flex;
             justify-content: center;
@@ -74,7 +93,6 @@
             transform: translateY(-2px);
         }
 
-        /* 4. 卡片網格 (插畫風格) */
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -100,7 +118,7 @@
         .loc-tag { font-size: 12px; font-weight: bold; color: #ff4757; }
         .tel { color: #2d6a4f; font-weight: bold; font-size: 13px; margin-top: 8px; }
 
-        /* 5. 彈窗與圖片縮放 (毛玻璃) */
+        /* --- 修正：圖片縮放與左滑功能 --- */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -125,28 +143,28 @@
         }
 
         .img-container {
-            overflow: auto;
-            max-height: 60vh;
+            overflow: auto; /* 關鍵：開啟捲軸 */
+            max-height: 55vh;
             background: #f9f9f9;
             border-radius: 15px;
             margin: 15px 0;
-            cursor: zoom-in;
-            display: flex;
-            justify-content: center;
+            -webkit-overflow-scrolling: touch;
         }
 
         #modalImg {
             width: 100%;
-            transition: transform 0.3s ease;
-            transform-origin: center;
+            display: block;
+            transition: width 0.3s ease;
+            cursor: zoom-in;
+            margin: 0 auto;
         }
 
         #modalImg.zoomed {
-            transform: scale(2.5);
+            width: 250%; /* 放大寬度觸發滑動 */
             cursor: zoom-out;
         }
+        /* -------------------------- */
 
-        /* 留言板與進度條 */
         .popularity-bar-bg {
             background: #eee;
             height: 12px;
@@ -210,13 +228,13 @@
         </div>
 
         <div class="review-section" style="text-align:left;">
-            <h4><i class="fas fa-comment-dots"></i> 學生心得留言板</h4>
-            <div id="reviewList" class="review-list"></div>
+            <h4><i class="fas fa-comment-dots"></i> 學生心得留言板 (全校同步)</h4>
+            <div id="reviewList" class="review-list">讀取中...</div>
             <div id="starRating" style="color:#ffc107; font-size:24px; cursor:pointer; margin-bottom:10px;">
                 <span onclick="setStar(1)">☆</span><span onclick="setStar(2)">☆</span><span onclick="setStar(3)">☆</span><span onclick="setStar(4)">☆</span><span onclick="setStar(5)">☆</span>
             </div>
             <div style="display:flex; gap:10px;">
-                <input type="text" id="commentInput" placeholder="這家好用嗎？..." style="flex:1; padding:10px; border-radius:5px; border:1px solid #ddd;">
+                <input type="text" id="commentInput" placeholder="這家評價如何？..." style="flex:1; padding:10px; border-radius:5px; border:1px solid #ddd;">
                 <button onclick="addComment()" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer;">送出</button>
             </div>
         </div>
@@ -224,6 +242,13 @@
 </div>
 
 <script>
+// --- Firebase 初始化 ---
+const firebaseConfig = {
+    databaseURL: "https://providencefood-db1ef-default-rtdb.asia-southeast1.firebasedatabase.app/"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
 const foods = [
   { loc: "靜園", name: "白鬍子飲料店 🌍", type: "飲品/西點(EN Menu)", tel: "2632-8001#14416", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/473781194_1107631627537294_2063324884115509816_n.jpg", time: "19:30關門(週末休)" },
   { loc: "靜園", name: "Morning house", type: "吐司/漢堡/蛋餅", tel: "0912-627436", menuImg: "https://raw.githubusercontent.com/caiyunzi-l/my-menu-pics/main/my_project/images/whitebeard.jpg.jpeg", time: "19:30關門(週末休)" },
@@ -300,7 +325,7 @@ function search() {
 function filter(loc) {
     const btns = document.querySelectorAll('.btn');
     btns.forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
+    if(event) event.target.classList.add('active');
     render(loc === 'all' ? foods : foods.filter(i => i.loc === loc));
 }
 
@@ -315,30 +340,46 @@ function setStar(n) {
     ss.forEach((s, i) => s.innerText = i < n ? '★' : '☆');
 }
 
+// --- 修改：從 Firebase 讀取心得 ---
 function displayReviews(name) {
     const list = document.getElementById('reviewList');
-    const data = JSON.parse(localStorage.getItem('foodReviews') || '{}');
-    const revs = data[name] || [];
-    list.innerHTML = revs.length === 0 ? '尚無心得' : revs.map(r => `
-        <div style="border-bottom:1px dashed #ddd; padding:5px 0;">
-            <div style="color:#ffc107;">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
-            <div>${r.text}</div>
-            <small style="color:#aaa;">${r.time}</small>
-        </div>
-    `).reverse().join('');
+    list.innerHTML = "載入留言中...";
+
+    // 監聽該店家的雲端資料路徑
+    db.ref('comments/' + name).on('value', (snapshot) => {
+        const data = snapshot.val();
+        if(!data) {
+            list.innerHTML = '尚無心得，快來當第一個評論的人！';
+            return;
+        }
+        
+        // 將物件轉為陣列並顯示
+        const revs = Object.values(data);
+        list.innerHTML = revs.map(r => `
+            <div style="border-bottom:1px dashed #ddd; padding:8px 0;">
+                <div style="color:#ffc107; font-size:12px;">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
+                <div style="margin:4px 0;">${r.text}</div>
+                <small style="color:#aaa;">${r.time}</small>
+            </div>
+        `).reverse().join('');
+    });
 }
 
+// --- 修改：將心得送到 Firebase 雲端 ---
 function addComment() {
     const name = document.getElementById('modalTitle').innerText;
     const input = document.getElementById('commentInput');
     if(!input.value || currentStars === 0) return alert("請評分並輸入心得");
-    const data = JSON.parse(localStorage.getItem('foodReviews') || '{}');
-    if(!data[name]) data[name] = [];
-    data[name].push({text: input.value, stars: currentStars, time: new Date().toLocaleString()});
-    localStorage.setItem('foodReviews', JSON.stringify(data));
+
+    // 推送資料到雲端
+    db.ref('comments/' + name).push({
+        text: input.value,
+        stars: currentStars,
+        time: new Date().toLocaleString()
+    });
+
     input.value = '';
     setStar(0);
-    displayReviews(name);
 }
 
 // 初始化
