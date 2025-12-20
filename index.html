@@ -318,20 +318,63 @@ function closeModal() {
 }
 
 function search() {
-    const val = document.getElementById('searchInput').value.toLowerCase();
-    render(foods.filter(i => i.name.includes(val) || i.type.includes(val)));
+    const input = document.getElementById('searchInput').value.toLowerCase().trim();
+    if (!input) { render(foods); return; }
+
+    // 1. 定義「關鍵字關聯辭典」：當使用者搜 A，我們幫他偷偷加搜 B, C...
+    const synonymMap = {
+        "飯": ["米食", "快餐", "便當", "飯捲", "燉飯", "丼飯", "炒飯"],
+        "麵": ["拉麵", "烏龍", "粉", "螺獅粉", "酸辣粉", "水餃", "鍋貼"],
+        "飲料": ["飲品", "茶", "咖啡", "果汁", "手搖"],
+        "健康": ["水煮", "輕食", "水果", "素食", "蔬食", "營養"],
+        "西式": ["漢堡", "吐司", "蛋餅", "咖啡", "三明治", "拉亞", "路易莎"],
+        "早餐": ["早午餐", "蛋餅", "豆漿", "漢堡", "吐司"]
+    };
+
+    // 2. 找出關聯詞：如果輸入的詞在辭典裡，就取出所有相關詞
+    let searchTerms = [input];
+    for (let key in synonymMap) {
+        if (input.includes(key)) {
+            searchTerms = searchTerms.concat(synonymMap[key]);
+        }
+    }
+
+    // 3. 執行搜尋：只要店家的任何欄位包含「輸入詞」或「任何一個關聯詞」就過濾出來
+    const filtered = foods.filter(item => {
+        const itemInfo = (item.name + item.type + item.loc).toLowerCase();
+        // 只要其中一個關聯詞有對上就算成功
+        return searchTerms.some(term => itemInfo.includes(term));
+    });
+
+    render(filtered);
 }
+    
 
 function filter(loc) {
+    // 清除搜尋框內容，避免干擾篩選
+    document.getElementById('searchInput').value = '';
+    
     const btns = document.querySelectorAll('.btn');
     btns.forEach(b => b.classList.remove('active'));
-    if(event) event.target.classList.add('active');
+    
+    // 修正：這裡加入一個檢查，確保是點擊按鈕觸發的
+    if (event && event.target && event.target.classList.contains('btn')) {
+        event.target.classList.add('active');
+    }
+    
     render(loc === 'all' ? foods : foods.filter(i => i.loc === loc));
 }
 
 function getRandomFood() {
-    const r = foods[Math.floor(Math.random() * foods.length)];
-    openModal(r.name, r.menuImg);
+    // 隨機抽之前，先讓卡片網格閃爍一下增加儀式感
+    const grid = document.getElementById('cardGrid');
+    grid.style.opacity = '0.3';
+    
+    setTimeout(() => {
+        grid.style.opacity = '1';
+        const r = foods[Math.floor(Math.random() * foods.length)];
+        openModal(r.name, r.menuImg);
+    }, 200);
 }
 
 function setStar(n) {
